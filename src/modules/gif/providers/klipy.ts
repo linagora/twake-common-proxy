@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Upstream } from '../../../upstream.js';
+import { parseResponse, type Upstream } from '../../../upstream.js';
 import type {
   Gif,
   GifFormat,
@@ -109,7 +109,8 @@ export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): Gi
     params: Record<string, string | undefined>,
     page: PageRequest,
   ): Promise<GifPage> => {
-    const body = pageSchema.parse(
+    const body = parseResponse(
+      pageSchema,
       await upstream.getJson(
         endpoint(path, {
           ...params,
@@ -133,7 +134,8 @@ export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): Gi
     search: (query, page) => fetchPage('gifs/search', { q: query }, page),
     trending: (page) => fetchPage('gifs/trending', {}, page),
     async categories(locale) {
-      const body = categoriesSchema.parse(
+      const body = parseResponse(
+        categoriesSchema,
         await upstream.getJson(
           endpoint('gifs/categories', {
             locale: locale?.region && `${locale.language}_${locale.region}`,
@@ -143,7 +145,8 @@ export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): Gi
       return body.data.categories.map((c) => ({ name: c.category, query: c.query }));
     },
     async autocomplete(query, limit) {
-      const body = suggestionsSchema.parse(
+      const body = parseResponse(
+        suggestionsSchema,
         await upstream.getJson(
           endpoint(`autocomplete/${encodeURIComponent(query)}`, { limit: limit?.toString() }),
         ),

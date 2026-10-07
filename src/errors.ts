@@ -19,6 +19,7 @@ export const errorHandler = (error: FastifyError, request: FastifyRequest, reply
     return problem(reply, 400, 'Invalid request', detail);
   }
   if (error instanceof UpstreamError) {
+    request.log.warn({ upstreamStatus: error.status, reason: error.message }, 'provider error');
     return error.status === 429
       ? problem(reply, 503, 'Provider quota exhausted, retry later')
       : problem(reply, 502, 'Provider error');

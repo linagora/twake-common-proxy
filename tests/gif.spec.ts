@@ -196,6 +196,24 @@ describe('errors', () => {
     expect(res.body).not.toContain(KLIPY_KEY);
   });
 
+  it('reports a provider answer in an unexpected shape as a bad gateway, not a bad request', async () => {
+    const upstream = klipy(() => ({ result: true, data: { items: [] } }));
+    const app = await buildServer({ config: directMedia, fetch: upstream.fetch });
+
+    const res = await app.inject({ url: '/v1/gif/search?q=cat', headers: bearer(SERVICE_TOKEN) });
+
+    expect(res.statusCode).toBe(502);
+  });
+
+  it('reports a provider answer that is not JSON as a bad gateway', async () => {
+    const upstream = fakeUpstream(() => new Response('<html>maintenance</html>'));
+    const app = await buildServer({ config: directMedia, fetch: upstream.fetch });
+
+    const res = await app.inject({ url: '/v1/gif/search?q=cat', headers: bearer(SERVICE_TOKEN) });
+
+    expect(res.statusCode).toBe(502);
+  });
+
   it('reports the provider quota as temporarily unavailable', async () => {
     const upstream = klipy(() => ({ result: false }), 429);
     const app = await buildServer({ config: directMedia, fetch: upstream.fetch });
