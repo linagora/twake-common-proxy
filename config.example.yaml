@@ -1,0 +1,50 @@
+# Every value can reference an environment variable: ${NAME} or ${NAME:-default}.
+# Keep secrets in the environment, not in this file.
+
+server:
+  host: 0.0.0.0
+  port: ${PORT:-8080}
+  # Base URL clients reach the proxy at. Proxied media links are built from it.
+  publicUrl: ${PUBLIC_URL}
+
+logLevel: ${LOG_LEVEL:-info}
+
+auth:
+  # Matrix users authenticate with an OpenID token from
+  # POST /_matrix/client/v3/user/{userId}/openid/request_token.
+  # With several homeservers, clients name theirs in the X-Matrix-Server-Name header.
+  matrix:
+    homeservers:
+      - serverName: example.com
+        # Where the federation API answers. Defaults to https://<serverName>.
+        federationUrl: https://matrix.example.com
+    tokenCacheSeconds: 300
+  # Backends (cozy-stack /remote, ...) authenticate with a static bearer token, 32+ characters.
+  services:
+    - name: cozy-stack
+      token: ${COZY_STACK_TOKEN}
+
+rateLimit:
+  max: 120
+  windowSeconds: 60
+
+upstream:
+  timeoutMs: 5000
+  userAgent: twake-common-proxy
+
+media:
+  # HMAC key for proxied media links, 32+ characters. Rotating it invalidates links in flight.
+  signingKey: ${MEDIA_SIGNING_KEY}
+  urlTtlSeconds: 3600
+  maxBytes: 20971520
+
+modules:
+  gif:
+    enabled: true
+    provider: klipy
+    # Stream GIF files through the proxy so the provider never sees user IPs.
+    proxyMedia: true
+    providers:
+      klipy:
+        apiKey: ${KLIPY_API_KEY}
+        contentFilter: medium
