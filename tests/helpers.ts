@@ -6,6 +6,7 @@ export const KLIPY_KEY = 'klipy-app-key';
 export const testConfig = (overrides: Record<string, unknown> = {}): Config =>
   parseConfig({
     server: { publicUrl: 'https://proxy.example.com' },
+    logLevel: 'silent',
     auth: { services: [{ name: 'backend', token: SERVICE_TOKEN }] },
     media: { signingKey: 'k'.repeat(32) },
     modules: {

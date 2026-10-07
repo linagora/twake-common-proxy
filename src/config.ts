@@ -29,7 +29,7 @@ const configSchema = z.object({
     port: int.default(8080),
     publicUrl: z.url(),
   }),
-  logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+  logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
   auth: z
     .object({
       matrix: z
