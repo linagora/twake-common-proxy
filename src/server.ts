@@ -1,3 +1,4 @@
+import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { createAuthenticator, type Principal } from './auth.js';
 import type { Config } from './config.js';
@@ -42,6 +43,14 @@ export const buildServer = async ({
         const principal = await authenticate(request.headers);
         if (!principal) return problem(reply, 401, 'Unauthorized');
         request.principal = principal;
+      });
+
+      await api.register(rateLimit, {
+        hook: 'preHandler',
+        max: config.rateLimit.max,
+        timeWindow: config.rateLimit.windowSeconds * 1000,
+        keyGenerator: (request) => `${request.principal.kind}:${request.principal.id}`,
+        errorResponseBuilder: () => ({ statusCode: 429, message: 'Too many requests' }),
       });
 
       const gif = config.modules.gif;
