@@ -15,6 +15,7 @@ const ALLOWED_TYPES = new Set([
   'video/webm',
 ]);
 const RANGE = /^bytes=\d*-\d*$/;
+const STREAM_TIMEOUT_MS = 60_000;
 
 // Proxied media URLs carry their own expiry and an HMAC over it and the upstream URL, so the
 // media route needs no caller authentication (img and video tags cannot send a bearer token)
@@ -86,16 +87,18 @@ export const mediaRoute: FastifyPluginAsync<MediaRouteOptions> = async (
       const range = request.headers.range;
       if (range && RANGE.test(range)) headers.range = range;
 
+      // The provider timeout covers the response headers only; a large video gets the
+      // longer stream timeout to finish downloading.
+      const abort = new AbortController();
+      let timer = setTimeout(() => abort.abort(), config.upstream.timeoutMs);
       let upstream: Response;
       try {
-        upstream = await fetch(url, {
-          headers,
-          redirect: 'error',
-          signal: AbortSignal.timeout(config.upstream.timeoutMs),
-        });
+        upstream = await fetch(url, { headers, redirect: 'error', signal: abort.signal });
       } catch {
+        clearTimeout(timer);
         return problem(reply, 502, 'Media fetch failed');
       }
+      clearTimeout(timer);
 
       const type = upstream.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
       const length = Number(upstream.headers.get('content-length') ?? NaN);
@@ -125,7 +128,8 @@ export const mediaRoute: FastifyPluginAsync<MediaRouteOptions> = async (
 
       const body = Readable.fromWeb(upstream.body as WebReadableStream<Uint8Array>);
       const out = capped(config.media.maxBytes);
-      pipeline(body, out, () => {});
+      timer = setTimeout(() => abort.abort(), STREAM_TIMEOUT_MS);
+      pipeline(body, out, () => clearTimeout(timer));
       return reply.send(out);
     },
   );

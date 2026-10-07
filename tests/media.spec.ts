@@ -146,6 +146,32 @@ describe('GIF media through the proxy', () => {
     expect(res?.rawPayload.length ?? 0).toBeLessThan(big.length);
   });
 
+  it('lets a file keep streaming past the provider timeout once it has started', async () => {
+    const chunks = ['GIF89a', '-slow', '-bytes'];
+    const slowFetch = async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      if (url.host === 'api.klipy.com') return json(klipyPage([klipyHelloGif]));
+      const body = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          init?.signal?.addEventListener('abort', () => controller.error(init.signal!.reason));
+          for (const chunk of chunks) {
+            await new Promise((resolve) => setTimeout(resolve, 40));
+            controller.enqueue(new TextEncoder().encode(chunk));
+          }
+          controller.close();
+        },
+      });
+      return new Response(body, { headers: { 'content-type': 'image/gif' } });
+    };
+    const config = testConfig({ upstream: { timeoutMs: 50 } });
+    const app = await buildServer({ config, fetch: slowFetch as typeof globalThis.fetch });
+    const proxied = await searchAndPick(app);
+
+    const res = await app.inject({ url: proxied.pathname });
+
+    expect(res.body).toBe(chunks.join(''));
+  });
+
   it('passes byte ranges through so video players can seek', async () => {
     const upstream = klipyWithMedia(() =>
       media(
