@@ -1,8 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Readable, Transform, pipeline } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
-import type { FastifyPluginAsync, FastifyReply } from 'fastify';
+import type { FastifyPluginAsync } from 'fastify';
 import type { Config } from './config.js';
+import { problem } from './errors.js';
 import type { Fetch } from './upstream.js';
 
 const ALLOWED_TYPES = new Set([
@@ -52,9 +53,6 @@ const capped = (maxBytes: number) => {
     },
   });
 };
-
-const problem = (reply: FastifyReply, status: number, title: string) =>
-  reply.code(status).type('application/problem+json').send({ type: 'about:blank', title, status });
 
 export interface MediaRouteOptions {
   signer: MediaSigner;

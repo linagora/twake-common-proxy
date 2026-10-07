@@ -74,4 +74,27 @@ export const gifModule: FastifyPluginAsync<GifModuleOptions> = async (
     const query = searchQuery.parse(request.query);
     return respond(provider.search(query.q, page(query)));
   });
+
+  app.get('/trending', async (request) =>
+    respond(provider.trending(page(pageQuery.parse(request.query)))),
+  );
+
+  app.get('/categories', async (request) => {
+    const { locale } = z.object({ locale: localeSchema.optional() }).parse(request.query);
+    return {
+      provider: provider.name,
+      attribution: provider.attribution,
+      categories: await provider.categories(locale),
+    };
+  });
+
+  app.get('/autocomplete', async (request) => {
+    const query = z
+      .object({ q: searchQuery.shape.q, limit: pageQuery.shape.limit })
+      .parse(request.query);
+    return {
+      provider: provider.name,
+      suggestions: await provider.autocomplete(query.q, query.limit),
+    };
+  });
 };

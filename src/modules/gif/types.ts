@@ -45,4 +45,12 @@ export interface GifProvider {
   attribution: Attribution;
   mediaHosts: readonly string[];
   search(query: string, page: PageRequest): Promise<GifPage>;
+  trending(page: PageRequest): Promise<GifPage>;
+  categories(locale?: Locale): Promise<Category[]>;
+  autocomplete(query: string, limit?: number): Promise<string[]>;
+}
+
+export interface Category {
+  name: string;
+  query: string;
 }

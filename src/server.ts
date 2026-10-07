@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { createAuthenticator, type Principal } from './auth.js';
 import type { Config } from './config.js';
+import { errorHandler, problem } from './errors.js';
 import { createMediaSigner, mediaRoute } from './media.js';
 import { createGifProvider, gifModule } from './modules/gif/index.js';
 import { createUpstream, type Fetch } from './upstream.js';
@@ -32,18 +33,14 @@ export const buildServer = async ({
   const mediaHosts = new Set<string>();
 
   app.decorateRequest('principal', undefined as unknown as Principal);
+  app.setErrorHandler(errorHandler);
+  app.setNotFoundHandler((_request, reply) => problem(reply, 404, 'Not found'));
 
   await app.register(
     async (api) => {
       api.addHook('onRequest', async (request, reply) => {
         const principal = await authenticate(request.headers);
-        if (!principal) {
-          return reply.code(401).type('application/problem+json').send({
-            type: 'about:blank',
-            title: 'Unauthorized',
-            status: 401,
-          });
-        }
+        if (!principal) return problem(reply, 401, 'Unauthorized');
         request.principal = principal;
       });
 

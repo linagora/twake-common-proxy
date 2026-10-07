@@ -52,6 +52,14 @@ const pageSchema = z.object({
   }),
 });
 
+const categoriesSchema = z.object({
+  data: z.object({
+    categories: z.array(z.object({ category: z.string(), query: z.string() })),
+  }),
+});
+
+const suggestionsSchema = z.object({ data: z.array(z.string()) });
+
 const isSize = (s: string): s is GifSize => (SIZES as readonly string[]).includes(s);
 const isFormat = (f: string): f is GifFormat => f in MIME;
 
@@ -127,5 +135,24 @@ export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): Gi
     attribution: { name: 'KLIPY', url: 'https://klipy.com', searchPlaceholder: 'Search KLIPY' },
     mediaHosts: config.mediaHosts,
     search: (query, page) => fetchPage('gifs/search', { q: query }, page),
+    trending: (page) => fetchPage('gifs/trending', {}, page),
+    async categories(locale) {
+      const body = categoriesSchema.parse(
+        await upstream.getJson(
+          endpoint('gifs/categories', {
+            locale: locale?.region && `${locale.language}_${locale.region}`,
+          }),
+        ),
+      );
+      return body.data.categories.map((c) => ({ name: c.category, query: c.query }));
+    },
+    async autocomplete(query, limit) {
+      const body = suggestionsSchema.parse(
+        await upstream.getJson(
+          endpoint(`autocomplete/${encodeURIComponent(query)}`, { limit: limit?.toString() }),
+        ),
+      );
+      return body.data;
+    },
   };
 };
