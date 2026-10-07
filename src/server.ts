@@ -21,6 +21,10 @@ declare module 'fastify' {
   interface FastifyRequest {
     principal: Principal;
   }
+  interface FastifyInstance {
+    // Fails readiness while still serving, so the load balancer drops the pod before close().
+    drain(): void;
+  }
 }
 
 export interface ServerDeps {
@@ -55,6 +59,10 @@ export const buildServer = async ({
   const mediaHosts = new Set<string>();
   const modules: Record<string, ModuleInfo> = {};
 
+  let draining = false;
+  app.decorate('drain', () => {
+    draining = true;
+  });
   app.decorateRequest('principal', undefined as unknown as Principal);
   app.setErrorHandler(errorHandler);
   app.setNotFoundHandler((_request, reply) => problem(reply, 404, 'Not found'));
@@ -82,7 +90,9 @@ export const buildServer = async ({
   });
 
   app.get('/healthz', async () => ({ status: 'ok' }));
-  app.get('/readyz', async () => ({ status: 'ok' }));
+  app.get('/readyz', async (_request, reply) =>
+    draining ? problem(reply, 503, 'Shutting down') : { status: 'ok' },
+  );
   app.get('/metrics', async (_request, reply) =>
     reply.type(metrics.registry.contentType).send(await metrics.registry.metrics()),
   );

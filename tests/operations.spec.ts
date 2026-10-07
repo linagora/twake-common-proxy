@@ -65,6 +65,18 @@ describe('health and metrics', () => {
     expect((await app.inject({ url: '/readyz' })).statusCode).toBe(200);
   });
 
+  it('reports not ready while draining, so Kubernetes stops routing before shutdown', async () => {
+    const upstream = fakeUpstream(() => json(klipyPage([klipyHelloGif])));
+    const app = await buildServer({ config: testConfig(), fetch: upstream.fetch });
+
+    app.drain();
+
+    expect((await app.inject({ url: '/readyz' })).statusCode).toBe(503);
+    expect((await app.inject({ url: '/healthz' })).statusCode).toBe(200);
+    const search = await app.inject({ url: '/v1/gif/search?q=x', headers: bearer(SERVICE_TOKEN) });
+    expect(search.statusCode).toBe(200);
+  });
+
   it('counts requests by route template and status, never by query', async () => {
     const upstream = fakeUpstream(() => json(klipyPage([klipyHelloGif])));
     const app = await buildServer({ config: testConfig(), fetch: upstream.fetch });

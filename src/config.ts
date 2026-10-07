@@ -31,6 +31,7 @@ const configSchema = z.object({
     // Addresses or CIDRs of the reverse proxies in front of the service, so rate limits see
     // the client address. Also accepts proxy-addr names such as uniquelocal.
     trustProxy: z.array(z.string().min(1)).default([]),
+    shutdownDelaySeconds: z.coerce.number().int().nonnegative().default(5),
   }),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
   auth: z
