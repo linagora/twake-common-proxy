@@ -1,5 +1,5 @@
 import rateLimit from '@fastify/rate-limit';
-import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify';
+import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } from 'fastify';
 import { createAuthenticator, type Principal } from './auth.js';
 import type { Config } from './config.js';
 import { errorHandler, problem } from './errors.js';
@@ -36,7 +36,7 @@ export const buildServer = async ({
   const app = Fastify({
     loggerInstance: logger as FastifyBaseLogger,
     // Fastify's request logs include the URL, and so the user's search query.
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
     // Media links carry the base64url-encoded upstream URL as a path segment.
     routerOptions: { maxParamLength: 2048 },
   });
