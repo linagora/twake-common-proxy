@@ -2,11 +2,17 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingHttpHeaders } from 'node:http';
 import { z } from 'zod';
 import type { Config } from './config.js';
-import type { Upstream } from './upstream.js';
+import { UpstreamError, type Upstream } from './upstream.js';
 
 export interface Principal {
   kind: 'service' | 'matrix';
   id: string;
+}
+
+export class AuthUnavailableError extends Error {
+  constructor() {
+    super('homeserver could not verify the token');
+  }
 }
 
 const MAX_CACHED_TOKENS = 10_000;
@@ -46,12 +52,16 @@ const createMatrixVerifier = (config: Config['auth']['matrix'], upstream: Upstre
 
     const url = new URL('/_matrix/federation/v1/openid/userinfo', baseUrl);
     url.searchParams.set('access_token', token);
-    let sub: string;
+    let body: unknown;
     try {
-      sub = userinfoSchema.parse(await upstream.getJson(url)).sub;
-    } catch {
-      return null;
+      body = await upstream.getJson(url);
+    } catch (error) {
+      if (error instanceof UpstreamError && error.status >= 400 && error.status < 500) return null;
+      throw new AuthUnavailableError();
     }
+    const parsed = userinfoSchema.safeParse(body);
+    if (!parsed.success) return null;
+    const { sub } = parsed.data;
     // A homeserver may only vouch for its own users.
     if (!sub.startsWith('@') || !sub.endsWith(`:${serverName}`)) return null;
 

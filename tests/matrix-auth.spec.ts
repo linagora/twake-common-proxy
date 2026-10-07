@@ -92,3 +92,14 @@ describe('Matrix OpenID tokens', () => {
     expect(userinfoCalls(upstream.requests)).toHaveLength(1);
   });
 });
+
+describe('when the homeserver is down', () => {
+  it('answers 503 instead of treating the user as logged out', async () => {
+    const upstream = fakeUpstream(() => json({ errcode: 'M_UNKNOWN' }, 502));
+    const app = await buildServer({ config: config([example]), fetch: upstream.fetch });
+
+    const res = await app.inject({ url: '/v1/gif/search?q=cat', headers: bearer('good') });
+
+    expect(res.statusCode).toBe(503);
+  });
+});

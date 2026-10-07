@@ -1,5 +1,6 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
+import { AuthUnavailableError } from './auth.js';
 import { UpstreamError } from './upstream.js';
 
 export const problem = (reply: FastifyReply, status: number, title: string, detail?: string) =>
@@ -21,6 +22,9 @@ export const errorHandler = (error: FastifyError, request: FastifyRequest, reply
     return error.status === 429
       ? problem(reply, 503, 'Provider quota exhausted, retry later')
       : problem(reply, 502, 'Provider error');
+  }
+  if (error instanceof AuthUnavailableError) {
+    return problem(reply, 503, 'Cannot verify credentials right now, retry later');
   }
   if (isTimeout(error)) return problem(reply, 504, 'Provider timed out');
   if (error.statusCode && error.statusCode < 500) {
