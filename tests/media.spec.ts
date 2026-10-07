@@ -67,16 +67,33 @@ describe('GIF media through the proxy', () => {
     expect(upstream.requests).toHaveLength(1);
   });
 
-  it('refuses a URL after it expires', async () => {
+  it('keeps a URL valid for at least the TTL, then refuses it', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const upstream = klipyWithMedia(() => media(GIF_BYTES, { 'content-type': 'image/gif' }));
     const app = await buildServer({ config: testConfig(), fetch: upstream.fetch });
     const proxied = await searchAndPick(app);
+    const issuedAt = Date.now();
 
-    vi.setSystemTime(Date.now() + 3601 * 1000);
-    const res = await app.inject({ url: proxied.pathname });
+    vi.setSystemTime(issuedAt + 3599 * 1000);
+    const late = await app.inject({ url: proxied.pathname });
+    vi.setSystemTime(issuedAt + 2 * 3600 * 1000 + 1000);
+    const expired = await app.inject({ url: proxied.pathname });
 
-    expect(res.statusCode).toBe(403);
+    expect(late.statusCode).toBe(200);
+    expect(expired.statusCode).toBe(403);
+  });
+
+  it('hands out the same URL for the same file across searches, so browsers reuse their cache', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.UTC(2026, 0, 1, 10, 0, 1));
+    const upstream = klipyWithMedia(() => media(GIF_BYTES, { 'content-type': 'image/gif' }));
+    const app = await buildServer({ config: testConfig(), fetch: upstream.fetch });
+
+    const first = await searchAndPick(app);
+    vi.setSystemTime(Date.UTC(2026, 0, 1, 10, 30, 0));
+    const second = await searchAndPick(app);
+
+    expect(second.href).toBe(first.href);
   });
 
   it('drops media the provider serves from a host outside its allowlist', async () => {

@@ -26,7 +26,10 @@ export const createMediaSigner = (config: Config['media'], publicUrl: string) =>
 
   return {
     sign(url: string): string {
-      const exp = String(Math.floor(Date.now() / 1000) + config.urlTtlSeconds);
+      // Expiry is rounded up to a TTL boundary so a file keeps one URL for a whole window and
+      // the browser cache hits across searches. Links therefore live between one and two TTLs.
+      const ttl = config.urlTtlSeconds;
+      const exp = String((Math.floor(Date.now() / 1000 / ttl) + 2) * ttl);
       const sig = mac(exp, url).toString('base64url');
       return `${base}/v1/media/${exp}/${sig}/${Buffer.from(url).toString('base64url')}`;
     },
