@@ -28,6 +28,9 @@ const configSchema = z.object({
     host: z.string().default('0.0.0.0'),
     port: int.default(8080),
     publicUrl: z.url(),
+    // Addresses or CIDRs of the reverse proxies in front of the service, so rate limits see
+    // the client address. Also accepts proxy-addr names such as uniquelocal.
+    trustProxy: z.array(z.string().min(1)).default([]),
   }),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
   auth: z
@@ -49,8 +52,8 @@ const configSchema = z.object({
     }),
   cors: z.object({ origins: z.array(z.url()).default([]) }).default({ origins: [] }),
   rateLimit: z
-    .object({ max: int.default(120), windowSeconds: int.default(60) })
-    .default({ max: 120, windowSeconds: 60 }),
+    .object({ max: int.default(120), maxPerIp: int.default(1200), windowSeconds: int.default(60) })
+    .default({ max: 120, maxPerIp: 1200, windowSeconds: 60 }),
   upstream: z
     .object({ timeoutMs: int.default(5000), userAgent: z.string().default('twake-common-proxy') })
     .default({ timeoutMs: 5000, userAgent: 'twake-common-proxy' }),

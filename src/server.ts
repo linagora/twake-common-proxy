@@ -1,6 +1,12 @@
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } from 'fastify';
+import Fastify, {
+  LogController,
+  type FastifyBaseLogger,
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from 'fastify';
 import { createAuthenticator, type Principal } from './auth.js';
 import type { Config } from './config.js';
 import { errorHandler, problem } from './errors.js';
@@ -40,6 +46,7 @@ export const buildServer = async ({
     logController: new LogController({ disableRequestLogging: true }),
     // Media links carry the base64url-encoded upstream URL as a path segment.
     routerOptions: { maxParamLength: 2048 },
+    trustProxy: config.server.trustProxy,
   });
   const upstream = createUpstream(fetch, config.upstream);
   const authenticate = createAuthenticator(config.auth, upstream);
@@ -80,49 +87,69 @@ export const buildServer = async ({
     reply.type(metrics.registry.contentType).send(await metrics.registry.metrics()),
   );
 
-  await app.register(
-    async (api) => {
-      api.addHook('onRequest', async (request, reply) => {
-        const principal = await authenticate(request.headers);
-        if (!principal) return problem(reply, 401, 'Unauthorized');
-        request.principal = principal;
-      });
+  const timeWindow = config.rateLimit.windowSeconds * 1000;
+  await app.register(rateLimit, { global: false, timeWindow });
+  // createRateLimit, unlike rateLimit(), lets two limiters run on the same request.
+  const limitBy = (max: number, keyGenerator: (request: FastifyRequest) => string) => {
+    const check = app.createRateLimit({ max, keyGenerator });
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+      const limit = await check(request);
+      if (limit.isAllowed || !limit.isExceeded) return;
+      reply.header('retry-after', limit.ttlInSeconds);
+      return problem(reply, 429, 'Too many requests');
+    };
+  };
 
-      await api.register(rateLimit, {
-        hook: 'preHandler',
-        max: config.rateLimit.max,
-        timeWindow: config.rateLimit.windowSeconds * 1000,
-        keyGenerator: (request) => `${request.principal.kind}:${request.principal.id}`,
-        errorResponseBuilder: () => ({ statusCode: 429, message: 'Too many requests' }),
-      });
+  await app.register(async (limited) => {
+    // Runs before authentication, so guessed tokens and replayed media links are capped too.
+    limited.addHook(
+      'onRequest',
+      limitBy(config.rateLimit.maxPerIp, (request) => `ip:${request.ip}`),
+    );
 
-      const gif = config.modules.gif;
-      if (gif?.enabled) {
-        const provider = createGifProvider(gif, upstream);
-        await api.register(gifModule, {
-          prefix: '/gif',
-          provider,
-          ...(gif.proxyMedia && { proxyMediaUrl: signer.sign }),
+    await limited.register(
+      async (api) => {
+        api.addHook('onRequest', async (request, reply) => {
+          const principal = await authenticate(request.headers);
+          if (!principal) return problem(reply, 401, 'Unauthorized');
+          request.principal = principal;
         });
-        if (gif.proxyMedia) provider.mediaHosts.forEach((h) => mediaHosts.add(h));
-        modules.gif = {
-          provider: provider.name,
-          attribution: provider.attribution,
-          mediaProxied: gif.proxyMedia,
-        };
-      }
+        api.addHook(
+          'preHandler',
+          limitBy(
+            config.rateLimit.max,
+            (request) => `${request.principal.kind}:${request.principal.id}`,
+          ),
+        );
 
-      api.get('/modules', async () => ({ modules }));
-    },
-    { prefix: '/v1' },
-  );
+        const gif = config.modules.gif;
+        if (gif?.enabled) {
+          const provider = createGifProvider(gif, upstream);
+          await api.register(gifModule, {
+            prefix: '/gif',
+            provider,
+            ...(gif.proxyMedia && { proxyMediaUrl: signer.sign }),
+          });
+          if (gif.proxyMedia) provider.mediaHosts.forEach((h) => mediaHosts.add(h));
+          modules.gif = {
+            provider: provider.name,
+            attribution: provider.attribution,
+            mediaProxied: gif.proxyMedia,
+          };
+        }
 
-  await app.register(mediaRoute, {
-    prefix: '/v1/media',
-    signer,
-    allowedHosts: mediaHosts,
-    fetch,
-    config,
+        api.get('/modules', async () => ({ modules }));
+      },
+      { prefix: '/v1' },
+    );
+
+    await limited.register(mediaRoute, {
+      prefix: '/v1/media',
+      signer,
+      allowedHosts: mediaHosts,
+      fetch,
+      config,
+    });
   });
 
   return app;
