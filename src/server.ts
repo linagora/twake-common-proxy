@@ -7,9 +7,10 @@ import Fastify, {
   type FastifyReply,
   type FastifyRequest,
 } from 'fastify';
-import { createAuthenticator, type Principal } from './auth.js';
+import { createAuthenticator } from './auth.js';
 import type { Config } from './config.js';
 import { errorHandler, problem } from './errors.js';
+import type { Principal } from './identity.js';
 import { createLogger, type Logger } from './logger.js';
 import { createMediaSigner, mediaRoute } from './media.js';
 import { createMetrics } from './metrics.js';

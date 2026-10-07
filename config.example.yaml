@@ -26,6 +26,19 @@ auth:
         # Where the federation API answers. Defaults to https://<serverName>.
         federationUrl: https://matrix.example.com
     tokenCacheSeconds: 300
+  # Users of an OIDC provider (SSO) authenticate with its access token.
+  oidc:
+    providers:
+      # Must equal the tokens' iss claim. Endpoints come from its discovery document.
+      - issuer: https://sso.example.com/
+        # When set, tokens must be issued to one of these client ids.
+        audiences: [twake-mail]
+        # Opaque tokens are checked through introspection with these credentials,
+        # or through userinfo when they are absent (which cannot check audiences).
+        introspection:
+          clientId: twake-common-proxy
+          clientSecret: ${OIDC_CLIENT_SECRET}
+    tokenCacheSeconds: 300
   # Backends (cozy-stack /remote, ...) authenticate with a static bearer token, 32+ characters.
   services:
     - name: cozy-stack

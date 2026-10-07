@@ -17,18 +17,26 @@ export const testConfig = (overrides: Record<string, unknown> = {}): Config =>
 
 export interface RecordedRequest {
   url: URL;
+  method: string;
   headers: Headers;
+  body: string | undefined;
 }
 
-type Route = (url: URL) => Response | Promise<Response>;
+type Route = (url: URL, request: RecordedRequest) => Response | Promise<Response>;
 
 // Stands in for the internet: every outbound request goes through here.
 export const fakeUpstream = (route: Route) => {
   const requests: RecordedRequest[] = [];
   const fetch = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const url = new URL(input instanceof Request ? input.url : input);
-    requests.push({ url, headers: new Headers(init?.headers) });
-    return route(url);
+    const request = {
+      url,
+      method: init?.method ?? 'GET',
+      headers: new Headers(init?.headers),
+      body: init?.body === undefined || init.body === null ? undefined : String(init.body),
+    };
+    requests.push(request);
+    return route(url, request);
   };
   return { fetch: fetch as typeof globalThis.fetch, requests };
 };

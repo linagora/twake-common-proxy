@@ -44,13 +44,36 @@ const configSchema = z.object({
           tokenCacheSeconds: int.default(300),
         })
         .default({ homeservers: [], tokenCacheSeconds: 300 }),
+      oidc: z
+        .object({
+          providers: z
+            .array(
+              z.object({
+                // Must equal the iss claim of the tokens, trailing slash included.
+                issuer: z.url(),
+                discoveryUrl: z.url().optional(),
+                // When set, a token must be issued to one of these clients.
+                audiences: z.array(z.string().min(1)).default([]),
+                introspection: z
+                  .object({ clientId: z.string().min(1), clientSecret: z.string().min(1) })
+                  .optional(),
+              }),
+            )
+            .default([]),
+          tokenCacheSeconds: int.default(300),
+        })
+        .default({ providers: [], tokenCacheSeconds: 300 }),
       services: z
         .array(z.object({ name: z.string().min(1), token: z.string().min(32) }))
         .default([]),
     })
-    .refine((auth) => auth.matrix.homeservers.length > 0 || auth.services.length > 0, {
-      message: 'configure at least one Matrix homeserver or service token',
-    }),
+    .refine(
+      (auth) =>
+        auth.matrix.homeservers.length > 0 ||
+        auth.oidc.providers.length > 0 ||
+        auth.services.length > 0,
+      { message: 'configure at least one Matrix homeserver, OIDC provider or service token' },
+    ),
   cors: z.object({ origins: z.array(z.url()).default([]) }).default({ origins: [] }),
   rateLimit: z
     .object({ max: int.default(120), maxPerIp: int.default(1200), windowSeconds: int.default(60) })

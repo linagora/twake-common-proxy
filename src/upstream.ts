@@ -20,12 +20,25 @@ export const parseResponse = <T>(schema: z.ZodType<T>, body: unknown): T => {
   return result.data;
 };
 
+interface RequestOptions {
+  // Only credentials this service owns or the token being verified, never caller headers.
+  authorization?: string;
+  form?: URLSearchParams;
+}
+
 // Every outbound request is built here from scratch: nothing from the caller's request
 // (IP, user agent, cookies, language, auth) can reach a provider.
 export const createUpstream = (fetch: Fetch, { timeoutMs }: { timeoutMs: number }) => ({
-  async getJson(url: URL): Promise<unknown> {
+  async getJson(url: URL, { authorization, form }: RequestOptions = {}): Promise<unknown> {
     const res = await fetch(url, {
-      headers: { 'user-agent': USER_AGENT, accept: 'application/json' },
+      method: form ? 'POST' : 'GET',
+      headers: {
+        'user-agent': USER_AGENT,
+        accept: 'application/json',
+        ...(authorization && { authorization }),
+        ...(form && { 'content-type': 'application/x-www-form-urlencoded' }),
+      },
+      ...(form && { body: form.toString() }),
       redirect: 'error',
       signal: AbortSignal.timeout(timeoutMs),
     });

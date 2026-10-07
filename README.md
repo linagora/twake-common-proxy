@@ -81,8 +81,10 @@ A GIF result looks like this:
 ## Authentication
 
 - Matrix clients send an OpenID token from `POST /_matrix/client/v3/user/{userId}/openid/request_token`, never their access token. The proxy checks it with the homeserver's `/_matrix/federation/v1/openid/userinfo` and accepts only users of that homeserver. When several homeservers are configured, the client names its own in `X-Matrix-Server-Name`.
+- Apps that log users in through an OIDC provider (SSO) send its access token. A JWT is checked against the provider's published keys, issuer and expiry, without a call per request. Any other token goes to the provider's introspection endpoint when the proxy has client credentials, or to its userinfo endpoint otherwise. Set `audiences` to accept only tokens issued to those clients. Userinfo cannot check that, so audiences need JWTs or introspection.
 - Backends such as cozy-stack send a static service token from the config.
 - Each caller has its own rate limit.
+- When the identity provider cannot be reached, the proxy answers 503 rather than 401, so clients keep their session and retry.
 
 ## Configuration
 

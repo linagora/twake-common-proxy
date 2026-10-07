@@ -1,6 +1,6 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { AuthUnavailableError } from './auth.js';
+import { AuthUnavailableError } from './identity.js';
 import { UpstreamError } from './upstream.js';
 
 export const problem = (reply: FastifyReply, status: number, title: string, detail?: string) =>
