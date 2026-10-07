@@ -125,6 +125,7 @@ export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): Gi
   return {
     name: 'klipy',
     attribution: { name: 'KLIPY', url: 'https://klipy.com', searchPlaceholder: 'Search KLIPY' },
+    mediaHosts: config.mediaHosts,
     search: (query, page) => fetchPage('gifs/search', { q: query }, page),
   };
 };

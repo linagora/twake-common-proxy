@@ -43,5 +43,6 @@ export interface PageRequest {
 export interface GifProvider {
   name: string;
   attribution: Attribution;
+  mediaHosts: readonly string[];
   search(query: string, page: PageRequest): Promise<GifPage>;
 }
