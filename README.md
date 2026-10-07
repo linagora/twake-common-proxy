@@ -24,7 +24,7 @@ Run `npm run check` before you push. It's what CI runs.
 
 ## Release it
 
-Push a `vX.Y.Z` tag. CI runs the checks and publishes `ghcr.io/rezk2ll/twake-common-proxy:X.Y.Z`, with its digest in the run summary. The [Helm chart](https://ci.linagora.com/linagora/lrs/saas/tools/helm-charts/twake-common-proxy) deploys it.
+Push a `vX.Y.Z` tag. CI runs the checks and publishes `ghcr.io/linagora/twake-common-proxy:X.Y.Z`, with its digest in the run summary. The [Helm chart](https://ci.linagora.com/linagora/lrs/saas/tools/helm-charts/twake-common-proxy) deploys it.
 
 KLIPY asks for written approval before a partner routes API calls or media through its own server ([integration requirements](https://docs.klipy.com/integration-requirements)). This service does both, so production needs that approval.
 
