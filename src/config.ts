@@ -80,14 +80,16 @@ const interpolate = (value: unknown, env: Env): unknown => {
   return value;
 };
 
-export const loadConfig = (path: string, env: Env = process.env): Config => {
-  const raw = interpolate(parseYaml(readFileSync(path, 'utf8')), env);
+export const parseConfig = (raw: unknown): Config => {
   const result = configSchema.safeParse(raw);
   if (!result.success) {
     const issues = result.error.issues
       .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
       .join('; ');
-    throw new Error(`Invalid configuration in ${path}: ${issues}`);
+    throw new Error(`Invalid configuration: ${issues}`);
   }
   return result.data;
 };
+
+export const loadConfig = (path: string, env: Env = process.env): Config =>
+  parseConfig(interpolate(parseYaml(readFileSync(path, 'utf8')), env));
