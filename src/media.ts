@@ -4,7 +4,7 @@ import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 import type { FastifyPluginAsync } from 'fastify';
 import type { Config } from './config.js';
 import { problem } from './errors.js';
-import type { Fetch } from './upstream.js';
+import { USER_AGENT, type Fetch } from './upstream.js';
 
 const ALLOWED_TYPES = new Set([
   'image/gif',
@@ -81,7 +81,7 @@ export const mediaRoute: FastifyPluginAsync<MediaRouteOptions> = async (
       }
 
       const headers: Record<string, string> = {
-        'user-agent': config.upstream.userAgent,
+        'user-agent': USER_AGENT,
         accept: 'image/*,video/*',
       };
       const range = request.headers.range;

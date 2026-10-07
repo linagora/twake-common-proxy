@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { GifModuleConfig } from '../../config.js';
 import type { Upstream } from '../../upstream.js';
 import { createKlipyProvider } from './providers/klipy.js';
-import type { Gif, GifPage, GifProvider, Locale, PageRequest } from './types.js';
+import type { Gif, GifPage, GifProvider, Locale } from './types.js';
 
 export const createGifProvider = (config: GifModuleConfig, upstream: Upstream): GifProvider => {
   switch (config.provider) {
@@ -30,12 +30,6 @@ const pageQuery = z.object({
 });
 
 const searchQuery = pageQuery.extend({ q: z.string().trim().min(1).max(100) });
-
-const page = (q: z.infer<typeof pageQuery>): PageRequest => ({
-  ...(q.limit !== undefined && { limit: q.limit }),
-  ...(q.cursor !== undefined && { cursor: q.cursor }),
-  ...(q.locale !== undefined && { locale: q.locale }),
-});
 
 export interface GifModuleOptions {
   provider: GifProvider;
@@ -72,11 +66,11 @@ export const gifModule: FastifyPluginAsync<GifModuleOptions> = async (
 
   app.get('/search', async (request) => {
     const query = searchQuery.parse(request.query);
-    return respond(provider.search(query.q, page(query)));
+    return respond(provider.search(query.q, query));
   });
 
   app.get('/trending', async (request) =>
-    respond(provider.trending(page(pageQuery.parse(request.query)))),
+    respond(provider.trending(pageQuery.parse(request.query))),
   );
 
   app.get('/categories', async (request) => {

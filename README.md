@@ -88,6 +88,8 @@ A GIF result looks like this:
 
 The service reads a YAML file (`CONFIG_FILE`, default `config.yaml`). Any value can reference the environment as `${NAME}` or `${NAME:-default}`, which is how secrets get in. [config.example.yaml](config.example.yaml) lists every setting.
 
+Web apps that call the proxy from the browser need their origin in `cors.origins`. Behind a reverse proxy, list it in `server.trustProxy`, or every client shares one rate limit.
+
 To switch a module off, set `enabled: false`. To pick its provider, set `provider` and give that provider an entry under `providers`, with its API key. Set `proxyMedia: false` to hand clients the provider's own media URLs instead, which exposes user IPs to the provider.
 
 ## Adding a provider or a module

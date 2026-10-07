@@ -6,6 +6,13 @@ server:
   port: ${PORT:-8080}
   # Base URL clients reach the proxy at. Proxied media links are built from it.
   publicUrl: ${PUBLIC_URL}
+  # Reverse proxies whose X-Forwarded-For is trusted, as addresses, CIDRs or
+  # proxy-addr names (loopback, linklocal, uniquelocal). Without it, rate limits
+  # see the proxy's address instead of the client's.
+  trustProxy: []
+  # On SIGTERM, fail /readyz this long before closing, so the pod leaves the
+  # load balancer first.
+  shutdownDelaySeconds: 5
 
 logLevel: ${LOG_LEVEL:-info}
 
@@ -24,13 +31,22 @@ auth:
     - name: cozy-stack
       token: ${COZY_STACK_TOKEN}
 
+# Web apps allowed to call the proxy from the browser.
+cors:
+  origins:
+    - https://chat.example.com
+
 rateLimit:
+  # Requests per caller (Matrix user or backend) per window.
   max: 120
+  # Requests per client address per window, counted before authentication and
+  # on media downloads. Keep it high: users behind one NAT share it.
+  maxPerIp: 1200
   windowSeconds: 60
 
 upstream:
+  # For API calls and for the start of a media download.
   timeoutMs: 5000
-  userAgent: twake-common-proxy
 
 media:
   # HMAC key for proxied media links, 32+ characters. Rotating it invalidates links in flight.

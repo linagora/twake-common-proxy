@@ -12,12 +12,11 @@ import type {
 
 export const klipyConfigSchema = z.object({
   apiKey: z.string().min(1),
-  baseUrl: z.url().default('https://api.klipy.com'),
   contentFilter: z.enum(['off', 'low', 'medium', 'high']).default('medium'),
-  mediaHosts: z
-    .array(z.string().min(1))
-    .default(['static.klipy.com', 'static1.klipy.com', 'static2.klipy.com']),
 });
+
+const API = 'https://api.klipy.com/';
+const MEDIA_HOSTS = ['static.klipy.com', 'static1.klipy.com', 'static2.klipy.com'];
 
 export type KlipyConfig = z.infer<typeof klipyConfigSchema>;
 
@@ -77,9 +76,9 @@ const toGif = (raw: unknown): Gif | null => {
         format,
         mime: MIME[format],
         url: file.url,
-        ...(file.width !== undefined && { width: file.width }),
-        ...(file.height !== undefined && { height: file.height }),
-        ...(file.size !== undefined && { bytes: file.size }),
+        width: file.width,
+        height: file.height,
+        bytes: file.size,
       });
     }
   }
@@ -87,17 +86,14 @@ const toGif = (raw: unknown): Gif | null => {
   return {
     id: item.data.slug,
     title: item.data.title,
-    ...(item.data.blur_preview && { blurPreview: item.data.blur_preview }),
+    blurPreview: item.data.blur_preview,
     media,
   };
 };
 
 export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): GifProvider => {
   const endpoint = (path: string, params: Record<string, string | undefined>): URL => {
-    const url = new URL(
-      `api/v1/${encodeURIComponent(config.apiKey)}/${path}`,
-      `${config.baseUrl}/`,
-    );
+    const url = new URL(`api/v1/${encodeURIComponent(config.apiKey)}/${path}`, API);
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined) url.searchParams.set(key, value);
     }
@@ -133,7 +129,7 @@ export const createKlipyProvider = (config: KlipyConfig, upstream: Upstream): Gi
   return {
     name: 'klipy',
     attribution: { name: 'KLIPY', url: 'https://klipy.com', searchPlaceholder: 'Search KLIPY' },
-    mediaHosts: config.mediaHosts,
+    mediaHosts: MEDIA_HOSTS,
     search: (query, page) => fetchPage('gifs/search', { q: query }, page),
     trending: (page) => fetchPage('gifs/trending', {}, page),
     async categories(locale) {

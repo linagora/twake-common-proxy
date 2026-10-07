@@ -55,9 +55,7 @@ const configSchema = z.object({
   rateLimit: z
     .object({ max: int.default(120), maxPerIp: int.default(1200), windowSeconds: int.default(60) })
     .default({ max: 120, maxPerIp: 1200, windowSeconds: 60 }),
-  upstream: z
-    .object({ timeoutMs: int.default(5000), userAgent: z.string().default('twake-common-proxy') })
-    .default({ timeoutMs: 5000, userAgent: 'twake-common-proxy' }),
+  upstream: z.object({ timeoutMs: int.default(5000) }).default({ timeoutMs: 5000 }),
   media: z.object({
     signingKey: z.string().min(32),
     urlTtlSeconds: int.default(3600),

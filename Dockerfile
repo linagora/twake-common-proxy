@@ -1,6 +1,4 @@
-ARG NODE_VERSION=22
-
-FROM node:${NODE_VERSION}-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
