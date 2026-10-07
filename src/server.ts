@@ -21,7 +21,7 @@ export const buildServer = async ({
 }: ServerDeps): Promise<FastifyInstance> => {
   const app = Fastify({ logger: false, disableRequestLogging: true });
   const upstream = createUpstream(fetch, config.upstream);
-  const authenticate = createAuthenticator(config.auth);
+  const authenticate = createAuthenticator(config.auth, upstream);
 
   app.decorateRequest('principal', undefined as unknown as Principal);
 
