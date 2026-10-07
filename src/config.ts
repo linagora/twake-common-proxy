@@ -47,6 +47,7 @@ const configSchema = z.object({
     .refine((auth) => auth.matrix.homeservers.length > 0 || auth.services.length > 0, {
       message: 'configure at least one Matrix homeserver or service token',
     }),
+  cors: z.object({ origins: z.array(z.url()).default([]) }).default({ origins: [] }),
   rateLimit: z
     .object({ max: int.default(120), windowSeconds: int.default(60) })
     .default({ max: 120, windowSeconds: 60 }),

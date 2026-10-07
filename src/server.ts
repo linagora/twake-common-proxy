@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } from 'fastify';
 import { createAuthenticator, type Principal } from './auth.js';
@@ -64,6 +65,13 @@ export const buildServer = async ({
       },
       'request',
     );
+  });
+
+  // Registered at the root so preflights answer before the /v1 auth hook asks for a token.
+  await app.register(cors, {
+    origin: config.cors.origins,
+    methods: ['GET'],
+    maxAge: 600,
   });
 
   app.get('/healthz', async () => ({ status: 'ok' }));
