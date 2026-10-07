@@ -15,8 +15,8 @@ server:
   publicUrl: https://proxy.example.com
 auth:
   services:
-    - name: cozy-stack
-      token: \${COZY_TOKEN}
+    - name: my-backend
+      token: \${BACKEND_TOKEN}
 media:
   signingKey: \${MEDIA_KEY}
 modules:
@@ -28,7 +28,7 @@ modules:
 `;
 
 const env = {
-  COZY_TOKEN: 'c'.repeat(32),
+  BACKEND_TOKEN: 'b'.repeat(32),
   MEDIA_KEY: 'm'.repeat(32),
   KLIPY_API_KEY: 'klipy-key',
 };
@@ -37,7 +37,7 @@ describe('loadConfig', () => {
   it('reads secrets from the environment and fills defaults', () => {
     const config = loadConfig(writeYaml(minimal), env);
 
-    expect(config.auth.services).toEqual([{ name: 'cozy-stack', token: 'c'.repeat(32) }]);
+    expect(config.auth.services).toEqual([{ name: 'my-backend', token: 'b'.repeat(32) }]);
     expect(config.media.signingKey).toBe('m'.repeat(32));
     expect(config.server.port).toBe(8080);
     expect(config.modules.gif).toMatchObject({

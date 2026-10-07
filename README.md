@@ -17,8 +17,6 @@ Point `config.yaml` at your homeserver or SSO, then start it with the secrets it
 PUBLIC_URL=http://localhost:8080 \
 KLIPY_API_KEY=<KLIPY app key> \
 MEDIA_SIGNING_KEY=$(openssl rand -hex 32) \
-COZY_STACK_TOKEN=$(openssl rand -hex 32) \
-OIDC_CLIENT_SECRET=<SSO client secret> \
 npm run dev
 ```
 

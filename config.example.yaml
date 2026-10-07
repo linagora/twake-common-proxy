@@ -35,14 +35,14 @@ auth:
         audiences: [twake-mail]
         # Opaque tokens are checked through introspection with these credentials,
         # or through userinfo when they are absent (which cannot check audiences).
-        introspection:
-          clientId: twake-common-proxy
-          clientSecret: ${OIDC_CLIENT_SECRET}
+        # introspection:
+        #   clientId: twake-common-proxy
+        #   clientSecret: ${OIDC_CLIENT_SECRET}
     tokenCacheSeconds: 300
-  # Backends (cozy-stack /remote, ...) authenticate with a static bearer token, 32+ characters.
-  services:
-    - name: cozy-stack
-      token: ${COZY_STACK_TOKEN}
+  # Any backend can call the proxy with its own static bearer token, 32+ characters.
+  services: []
+    # - name: my-backend
+    #   token: ${MY_BACKEND_TOKEN}
 
 # Web apps allowed to call the proxy from the browser.
 cors:
