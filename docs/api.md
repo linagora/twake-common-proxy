@@ -20,7 +20,7 @@ Any Twake app can call the proxy. The token decides how the caller is checked.
 
 - A backend sends its own static service token, listed in the config.
 - A Matrix client sends an OpenID token from `POST /_matrix/client/v3/user/{userId}/openid/request_token`, never its access token. The proxy checks it with the homeserver's `/_matrix/federation/v1/openid/userinfo` and accepts only users of that homeserver. When several homeservers are configured, the client names its own in `X-Matrix-Server-Name` (the part after the colon in its user id).
-- An app that logs users in through an OIDC provider (SSO) sends its access token. A JWT is checked against the provider's published keys, issuer and expiry, without a call per request. Any other token goes to the provider's introspection endpoint when the proxy has client credentials, or to its userinfo endpoint otherwise.
+- An app that logs users in through an SSO (OIDC) sends its access token. A JWT is checked against the SSO's published keys, issuer and expiry, without a call per request. Any other token goes to the SSO's introspection endpoint when the proxy has client credentials, or to its userinfo endpoint otherwise.
 
 Accepted tokens are cached. When the homeserver or SSO cannot be reached, the proxy answers 503 rather than 401, so clients keep their session and retry.
 

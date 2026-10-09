@@ -2,27 +2,12 @@
 
 ## What the proxy guarantees
 
-- Each upstream request is built from scratch. Caller headers, cookies and addresses are never copied.
-- No user identifier is sent to the provider. It sees the proxy, its API key and the search terms.
+- Each upstream request is built from scratch. Caller headers, cookies and addresses are never copied to the provider.
+- No user identifier is sent to the provider. It sees the proxy, its API key and the query.
 - Logs and metrics record the route, status and duration, never the query, the caller or their address.
 - Media links are signed and expire. The proxy only fetches media from the provider's own hosts and only relays images and videos.
 
-```mermaid
-sequenceDiagram
-    participant C as Twake app
-    participant P as twake-common-proxy
-    participant H as Homeserver or SSO
-    participant K as KLIPY
-    C->>P: GET /v1/gif/search?q=cat (Bearer token)
-    P->>H: check the token (cached)
-    H-->>P: user
-    P->>K: new request: our API key, fixed user agent, nothing from the caller
-    K-->>P: KLIPY JSON
-    P-->>C: results, media links pointing at the proxy
-    C->>P: GET /v1/media/{exp}/{sig}/{url}
-    P->>K: fetch the file from static*.klipy.com
-    P-->>C: file bytes
-```
+[architecture.md](architecture.md#privacy-boundary) explains how.
 
 ## Configuration
 
@@ -43,9 +28,7 @@ On SIGTERM, `/readyz` fails for `server.shutdownDelaySeconds` so the load balanc
 
 ## What it reaches
 
-- The provider's API and media hosts (`api.klipy.com`, `static*.klipy.com`).
-- Each homeserver's federation API, for `/_matrix/federation/v1/openid/userinfo`.
-- Each SSO's discovery document, keys, and introspection or userinfo endpoint.
+Outbound HTTPS to the provider, the homeservers and the SSOs. [dependencies.md](dependencies.md#external-services) lists the hosts and what happens when one fails.
 
 ## Scaling
 
