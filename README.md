@@ -30,6 +30,8 @@ KLIPY asks for written approval before a partner routes API calls or media throu
 
 ## Docs
 
+- [Architecture](docs/architecture.md): how a request flows through the proxy, the privacy boundary, authentication and media links.
+- [Dependencies](docs/dependencies.md): the services it calls, the libraries it runs on, and how it is built.
 - [HTTP API](docs/api.md): every route, how callers authenticate, and what they get back.
 - [Deploying](docs/deploy.md): what the proxy guarantees, its configuration, and what it reaches.
 - [Development](docs/development.md): code layout, adding a provider or a module.
